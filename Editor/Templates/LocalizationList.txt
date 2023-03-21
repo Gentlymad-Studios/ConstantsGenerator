@@ -1,0 +1,13 @@
+#if UNITY_EDITOR
+using System.Collections.Generic;
+using static GentlyLoca.Runtime.LocalizationKeys;
+
+namespace GentlyLoca {
+    public class //%className {
+        // List
+        public static readonly List<string> keys = new List<string>() {
+            nameof(//%keysEntry),
+        };
+    }
+}
+#endif

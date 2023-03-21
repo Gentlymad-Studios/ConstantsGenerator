@@ -1,0 +1,13 @@
+#if UNITY_EDITOR
+using System.Collections.Generic;
+using static GentlyLoca.Runtime.LocalizationKeys;
+
+namespace GentlyLoca {
+    public class //%className {
+        // Lookup
+        public static readonly Dictionary<int,string> keysLookup = new Dictionary<int,string>() {
+            //%1{ %constKey, nameof(%constValue) },
+        };
+    }
+}
+#endif

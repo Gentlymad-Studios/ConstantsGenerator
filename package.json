@@ -1,0 +1,21 @@
+{
+	"name": "com.gentlymadstudios.locaconstants",
+	"displayName": "Loca Constants Generator",
+	"description": "Code generation for Localization keys to get type safety when setting & adjusting loca keys in scripts. This tool can create C# files based on a single .json file.",
+	"version": "0.0.1",
+	"unity": "2022.2",
+	"license": "MIT",
+	"documentationUrl": "https://github.com/Gentlymad-Studios/LocaConstants/blob/master/README.md",
+  	"changelogUrl": "https://github.com/Gentlymad-Studios/LocaConstants/blob/master/CHANGELOG.md",
+  	"licensesUrl": "https://github.com/Gentlymad-Studios/LocaConstants/blob/master/LICENSE.md",
+	"custom_packageJsonLink": "https://raw.githubusercontent.com/Gentlymad-Studios/LocaConstants/master/package.json",
+	"author": {
+		"name": "Gentlymad Studios",
+		"url": "https://gentlymadstudios.com",
+		"email": "team@gentlymadstudios.com"
+	},
+	"dependencies": {
+		"com.unity.nuget.newtonsoft-json": "3.0.2",
+		"com.unity.settings-manager": "2.0.1"
+	}
+}

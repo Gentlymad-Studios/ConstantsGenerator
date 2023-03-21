@@ -1,0 +1,6 @@
+namespace GentlyLoca.Runtime {
+    public class //%className {
+        // Keys
+        //%0public const int %constValue = %constKey;
+    }
+}
