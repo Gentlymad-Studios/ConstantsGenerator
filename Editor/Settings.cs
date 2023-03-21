@@ -25,6 +25,7 @@ namespace LocaConstants {
             get {
                 if (instance == null) {
                     instance = new UnityEditor.SettingsManagement.Settings(packageName);
+                    Save();
                 }
 
                 return instance;
@@ -33,18 +34,6 @@ namespace LocaConstants {
 
         public static void Save() {
             Instance.Save();
-        }
-
-        public static T Get<T>(string key, SettingsScope scope = SettingsScope.Project, T fallback = default) {
-            return Instance.Get(key, scope, fallback);
-        }
-
-        public static void Set<T>(string key, T value, SettingsScope scope = SettingsScope.Project) {
-            Instance.Set(key, value, scope);
-        }
-
-        public static bool ContainsKey<T>(string key, SettingsScope scope = SettingsScope.Project) {
-            return Instance.ContainsKey<T>(key, scope);
         }
     }
 }

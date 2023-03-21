@@ -16,8 +16,7 @@ namespace LocaConstants {
         private static string lastPathToKeys;
         private static double nextTick = 0;
         private static bool isInitialized = false;
-        private static string currentPathToKeys = null;
-        
+
         [UserSetting(generalCategory, nameof(tickRateInSeconds), "The tick rate to detect file changes in seconds (requires Unity restart).")]
         internal static FloatSetting tickRateInSeconds = new FloatSetting(generalCategoryKey + nameof(tickRateInSeconds), 3f);
 
@@ -29,15 +28,6 @@ namespace LocaConstants {
             // we need to synchronize the context an therefor we need to be hooked into the editor update method.
             EditorApplication.update -= OnEditorApplicationUpdate;
             EditorApplication.update += OnEditorApplicationUpdate;
-        }
-
-        /// <summary>
-        /// Get the current path to our keys .json
-        /// We'll get the current value directly from our settings data.
-        /// </summary>
-        /// <returns></returns>
-        private static string GetCurrentPathToKeys() {
-            return Get<string>(generalCategoryKey + nameof(Generator.pathToKeysJson));
         }
 
         /// <summary>
@@ -58,8 +48,7 @@ namespace LocaConstants {
             // throttle ticks, since we are not that time dependent...
             if (EditorApplication.timeSinceStartup > nextTick) {
                 nextTick = EditorApplication.timeSinceStartup + tickRateInSeconds.value;
-                currentPathToKeys = GetCurrentPathToKeys();
-                
+
                 // are we initialized?
                 if (!isInitialized) {
                     // no so initialize for the first time...
@@ -67,7 +56,7 @@ namespace LocaConstants {
                     isInitialized = true;
                 } else {
                     // did the settings path change? Re-initialize!
-                    if (lastPathToKeys != GetCurrentPathToKeys()) {
+                    if (lastPathToKeys != Generator.pathToKeysJson.value) {
                         Initialize();
                     }
                     // was the fileChanged flag set?
@@ -84,7 +73,7 @@ namespace LocaConstants {
         /// Initialize & setup the file watcher
         /// </summary>
         private static void Initialize() {
-            lastPathToKeys = currentPathToKeys;
+            lastPathToKeys = Generator.pathToKeysJson.value;
 
             // make sure to dispose the current watcher properly...
             if (watcher != null) {
