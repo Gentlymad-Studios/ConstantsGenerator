@@ -107,23 +107,17 @@ namespace LocaConstants {
             // runtime script paths
             string assetPathOfRuntimeTemplate = AssetDatabase.GUIDToAssetPath(guidOfRuntimeTemplate.value);
             runtimeFilename = Path.GetFileNameWithoutExtension(assetPathOfRuntimeTemplate);
-            string fullPathOfRuntimeTemplate = assetPathOfRuntimeTemplate.Substring(7);
-            pathToRuntimeTemplate = Path.Combine(dataPath, fullPathOfRuntimeTemplate);
-            pathToRuntimeTemplate = Path.GetFullPath(pathToRuntimeTemplate);
+            pathToRuntimeTemplate = Path.GetFullPath(assetPathOfRuntimeTemplate);
 
             // list script paths
             string assetPathOfListTemplate = AssetDatabase.GUIDToAssetPath(guidOfListTemplate.value);
             listFilename = Path.GetFileNameWithoutExtension(assetPathOfListTemplate);
-            string fullPathOfListTemplate = assetPathOfListTemplate.Substring(7);
-            pathToListTemplate = Path.Combine(dataPath, fullPathOfListTemplate);
-            pathToListTemplate = Path.GetFullPath(pathToListTemplate);
+            pathToListTemplate = Path.GetFullPath(assetPathOfListTemplate);
 
             // lookup script paths
             string assetPathOfLookupTemplate = AssetDatabase.GUIDToAssetPath(guidOfLookupTemplate.value);
             lookupFilename = Path.GetFileNameWithoutExtension(assetPathOfLookupTemplate);
-            string fullPathOfLookupTemplate = assetPathOfLookupTemplate.Substring(7);
-            pathToLookupTemplate = Path.Combine(dataPath, fullPathOfLookupTemplate);
-            pathToLookupTemplate = Path.GetFullPath(pathToLookupTemplate);
+            pathToLookupTemplate = Path.GetFullPath(assetPathOfLookupTemplate);
 
             // load the .json file
             keysJson = AssetDatabase.LoadAssetAtPath<TextAsset>(pathToKeysJson).text;
