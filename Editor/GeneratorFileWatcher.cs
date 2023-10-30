@@ -23,7 +23,7 @@ namespace LocaConstants {
         /// <summary>
         /// This methid will be executed automatically after recompilation.
         /// </summary>
-        [InitializeOnLoadMethod]
+        //[InitializeOnLoadMethod]
         private static void HookIntoEditorUpdate() {
             // we need to synchronize the context an therefor we need to be hooked into the editor update method.
             EditorApplication.update -= OnEditorApplicationUpdate;

@@ -18,3 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.3] - 2023-03-22
 ### Fixed
 - Fixed faulty path creation to read and retrieve template files
+
+## [0.0.4] - 2023-03-22
+### Fixed
+- Deactivating automatic file watcher as it sometimes causes/ triggers wrongly
