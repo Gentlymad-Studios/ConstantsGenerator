@@ -1,5 +1,5 @@
-namespace GentlyLoca.Runtime {
-    public class //%className {
+﻿namespace //%namespaceRuntime {
+    public class //%classNameKeys {
         // Keys
         //%0public const int %constValue = %constKey;
     }

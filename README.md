@@ -1,2 +1,2 @@
 # ConstantsGenerator
-Code generation for Localization keys to get type safety when setting &amp; adjusting loca keys in scripts. This tool can create C# files based on a single .json file.
+Code generation for dynamic game content to get type safety when we need to reference specific data &amp; in scripts. This tool can create C# files based on custom logic.

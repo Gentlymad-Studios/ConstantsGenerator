@@ -1,8 +1,8 @@
 {
-    "name": "LocaConstants.Editor",
+    "name": "ConstantsGenerator.Editor",
     "rootNamespace": "",
     "references": [
-        "GUID:49818357e697641afb75d2f8acaf1861"
+        "GUID:4506b4beec3fdca46893889f857b0dcf"
     ],
     "includePlatforms": [
         "Editor"

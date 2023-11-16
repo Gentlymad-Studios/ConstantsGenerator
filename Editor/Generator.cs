@@ -1,88 +1,105 @@
-using UnityEditor.SettingsManagement;
-using StringSetting = LocaConstants.SettingsWrapper<string>;
-using static LocaConstants.Settings;
-using UnityEditor;
+﻿using UnityEditor;
 using UnityEngine;
 using Newtonsoft.Json;
 using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Text;
+using System;
+using System.Linq;
 
-namespace LocaConstants {
-    /// <summary>
-    /// Code generation class to convert a .json with Loca Keys into concrete c# declarations.
-    /// </summary>
-    public class Generator {
+namespace ConstantsGenerator {
+	using static Settings;
 
-        private const string paramSign = "%";
-        private const string commentSign = "//";
-        private const string commentSignAndparamSign = commentSign+paramSign;
-        private const string constantLine = commentSignAndparamSign + "0";
-        private const string lookupEntryLine = commentSignAndparamSign + "1";
-        private const string constKey = paramSign + nameof(constKey);
-        private const string constValue = paramSign + nameof(constValue);
-        private const string keysEntry = commentSignAndparamSign + nameof(keysEntry);
-        private const string keysLookupEntry = commentSignAndparamSign + nameof(keysLookupEntry);
-        private const string className = commentSignAndparamSign + nameof(className);
+	/// <summary>
+	/// Code generation class to convert a .json with Loca Keys into concrete c# declarations.
+	/// </summary>
+	public class Generator {
 
-        [UserSetting(generalCategory, nameof(pathToKeysJson), "The path to the keys .json")]
-        internal static StringSetting pathToKeysJson = new StringSetting(generalCategoryKey + nameof(pathToKeysJson), "Assets/PackageEditor/Languages/All Languages_Editor.json");
-        [UserSetting(generalCategory, nameof(guidOfRuntimeTemplate), "The guid to the C# template file that should be used for all constants.")]
-        internal static StringSetting guidOfRuntimeTemplate = new StringSetting(generalCategoryKey + nameof(guidOfRuntimeTemplate), "f48d54b919a0e3646b996be8a91f53fc");
-        [UserSetting(generalCategory, nameof(guidOfListTemplate), "The guid to the C# template file used for generating a list of all constants.")]
-        internal static StringSetting guidOfListTemplate = new StringSetting(generalCategoryKey + nameof(guidOfListTemplate), "fcd75c38619fd0145bf7a6e1b20174eb");
-        [UserSetting(generalCategory, nameof(guidOfLookupTemplate), "The guid to the C# template file used for generating a dicitonary lookup of all constants.")]
-        internal static StringSetting guidOfLookupTemplate = new StringSetting(generalCategoryKey + nameof(guidOfLookupTemplate), "9d5f11f97d1a65e458740e647f2e3ee5");
-        [UserSetting(generalCategory, nameof(outputPath), "The path where the generated .cs file should be outputted.")]
-        internal static StringSetting outputPath = new StringSetting(generalCategoryKey + nameof(outputPath), "Generated/Localization");
-        [UserSetting(generalCategory, nameof(outputEditorPath), "The path where the generated editor only .cs files should be outputted.")]
-        internal static StringSetting outputEditorPath = new StringSetting(generalCategoryKey + nameof(outputEditorPath), "Generated/Localization/Editor");
+        private const string PARAM_SIGN = "%";
+        private const string COMMENT_SIGN = "//";
+        private const string COMMENT_SIGN_AND_PARAM_SIGN = COMMENT_SIGN+PARAM_SIGN;
+        private const string CONSTANT_LINE = COMMENT_SIGN_AND_PARAM_SIGN + "0";
+        private const string LOOKUP_ENTRY_LINE = COMMENT_SIGN_AND_PARAM_SIGN + "1";
+        private const string CONST_KEY = PARAM_SIGN + "constKey";
+        private const string CONST_VALUE = PARAM_SIGN + "constValue";
+		private const string KEYS_ENTRY_RAW = "keysEntry";
+		private const string KEYS_ENTRY = PARAM_SIGN + KEYS_ENTRY_RAW;
+		private const string CLASS_NAME_LIST = COMMENT_SIGN_AND_PARAM_SIGN + nameof(classNameList);
+		private const string CLASS_NAME_LOOKUP = COMMENT_SIGN_AND_PARAM_SIGN + nameof(classNameLookup);
+		private const string CLASS_NAME_KEYS = COMMENT_SIGN_AND_PARAM_SIGN + nameof(classNameKeys);
+		private const string NAMESPACE = COMMENT_SIGN_AND_PARAM_SIGN + nameof(@namespace);
+		private const string NAMESPACE_RUNTIME = COMMENT_SIGN_AND_PARAM_SIGN + nameof(namespaceRuntime);
+		private const string CSHARP_FILE_ENDING = ".cs";
 
-        internal static StringBuilder runtimeFileContent = null;
+		internal static StringBuilder runtimeFileContent = null;
         internal static StringBuilder listFileContent = null;
         internal static StringBuilder lookupFileContent = null;
 
         internal static string dataPath = null;
         internal static bool isGenerating = false;
 
-        internal static string keysJson = null;
         internal static string outputPathCached = null;
         internal static string outputEditorPathCached = null;
-        internal static GeneratorLocaModel keys = null;
+        internal static LookupModel model = null;
 
-        internal static string runtimeFilename = null;
         internal static string pathToRuntimeTemplate = null;
-
-        internal static string listFilename = null;
         internal static string pathToListTemplate = null;
-
-        internal static string lookupFilename = null;
         internal static string pathToLookupTemplate = null;
 
-        /// <summary>
-        /// action to execute/initiate the code generation process.
-        /// </summary>
-        [MenuItem(createConstantsActionMenu)]
+		internal static string classNameList = null;
+		internal static string classNameKeys = null;
+		internal static string classNameLookup = null;
+		internal static string @namespace = null;
+		internal static string namespaceRuntime = null;
+
+		internal static bool createEditorScripts = false;
+
+		internal static Dictionary<string, Action<GeneratorItem>> conversionActions = null;
+		internal static Dictionary<string, Action<GeneratorItem>> ConversionActions {
+			get {
+				if (conversionActions == null) {
+					conversionActions = Settings.instance.adapter.GetConversionActions();
+				}
+				return conversionActions;
+			}
+		}
+
+		public static void SetModel(LookupModel model) {
+			Generator.model = model;
+		}
+
+		/// <summary>
+		/// action to execute/initiate the code generation process.
+		/// </summary>
+		[MenuItem(MENU_ITEM_ALL)]
         internal static void CreateConstantsAction() {
-            CreateConstantsAsync();
+			CreateConstantsAsync();
         }
 
         /// <summary>
         /// The asynchronouse code generation process
         /// </summary>
-        private static async void CreateConstantsAsync() {
+        public static async void CreateConstantsAsync(string[] generatorIds = null) {
             // do nothing if we are already creating files...
             if (isGenerating) {
                 return;
             }
-            
-            // cache all the relevant data
-            UpdateSources();
-            
-            // run the creation task asynchronously
-            await Task.Run(() => CreateConstants());
-            
+
+			// cache all the relevant data
+			UpdateSources();
+
+			for (int i=0; i< Settings.instance.generators.Length; i++) {
+				GeneratorItem generatorItem = Settings.instance.generators[i];
+				
+				if ((generatorIds == null || generatorIds.Contains(generatorItem.logicID)) && ConversionActions.ContainsKey(generatorItem.logicID)) {
+					UpdateSpecificSources(generatorItem);
+
+					// run the creation task asynchronously
+					await Task.Run(() => CreateConstants());
+				}
+			}
+
             // refresh the asset database after the change
             AssetDatabase.Refresh();
         }
@@ -97,37 +114,46 @@ namespace LocaConstants {
             isGenerating = false;
         }
 
-        /// <summary>
-        /// Cache all thread unsafe data.
-        /// </summary>
-        private static void UpdateSources() {
+		public static void ConvertJSON(GeneratorItem generatorItem) {
+			// load the .json file
+			string json = AssetDatabase.LoadAssetAtPath<TextAsset>(generatorItem.searchPath).text;
+			// deserialize it (JSON.NET does not work in an asynchronous context)
+			model = JsonConvert.DeserializeObject<LookupModel>(json);
+		}
+
+		private static void UpdateSpecificSources(GeneratorItem generatorItem) {
+			conversionActions[generatorItem.logicID](generatorItem);
+
+			// cache our paths that are based on our settings file.
+			outputPathCached = generatorItem.outputPath;
+			outputEditorPathCached = generatorItem.outputEditorPath;
+			@namespace = generatorItem.@namespace;
+			namespaceRuntime = generatorItem.namespaceRuntime;
+			Debug.Log(namespaceRuntime);
+			classNameKeys = generatorItem.classNameKeys;
+			classNameList = generatorItem.classNameList;
+			classNameLookup = generatorItem.classNameLookup;
+			createEditorScripts = generatorItem.createEditorOnlyLookup;
+		}
+
+		/// <summary>
+		/// Cache all thread unsafe data.
+		/// </summary>
+		private static void UpdateSources() {
             // get the data path
             dataPath = Application.dataPath;
 
             // runtime script paths
-            string assetPathOfRuntimeTemplate = AssetDatabase.GUIDToAssetPath(guidOfRuntimeTemplate.value);
-            runtimeFilename = Path.GetFileNameWithoutExtension(assetPathOfRuntimeTemplate);
+            string assetPathOfRuntimeTemplate = AssetDatabase.GUIDToAssetPath(Settings.instance.guidOfRuntimeTemplate);
             pathToRuntimeTemplate = Path.GetFullPath(assetPathOfRuntimeTemplate);
 
             // list script paths
-            string assetPathOfListTemplate = AssetDatabase.GUIDToAssetPath(guidOfListTemplate.value);
-            listFilename = Path.GetFileNameWithoutExtension(assetPathOfListTemplate);
+            string assetPathOfListTemplate = AssetDatabase.GUIDToAssetPath(Settings.instance.guidOfListTemplate);
             pathToListTemplate = Path.GetFullPath(assetPathOfListTemplate);
 
             // lookup script paths
-            string assetPathOfLookupTemplate = AssetDatabase.GUIDToAssetPath(guidOfLookupTemplate.value);
-            lookupFilename = Path.GetFileNameWithoutExtension(assetPathOfLookupTemplate);
+            string assetPathOfLookupTemplate = AssetDatabase.GUIDToAssetPath(Settings.instance.guidOfLookupTemplate);
             pathToLookupTemplate = Path.GetFullPath(assetPathOfLookupTemplate);
-
-            // load the .json file
-            keysJson = AssetDatabase.LoadAssetAtPath<TextAsset>(pathToKeysJson).text;
-            
-            // deserialize it (JSON.NET does not work in an asynchronous context)
-            keys = JsonConvert.DeserializeObject<GeneratorLocaModel>(keysJson);
-            
-            // cache our paths that are based on our settings file.
-            outputPathCached = outputPath.value;
-            outputEditorPathCached= outputEditorPath.value;
         }
 
         /// <summary>
@@ -148,75 +174,96 @@ namespace LocaConstants {
             runtimeFileContent = new StringBuilder();
             using (StreamReader file = new StreamReader(pathToRuntimeTemplate)) {
                 while ((line = file.ReadLine()) != null) {
-                    if (constLineTemplate == null && line.Contains(constantLine)) {
-                        constLineTemplate = line.Replace(constantLine, "");
+                    if (constLineTemplate == null && line.Contains(CONSTANT_LINE)) {
+                        constLineTemplate = line.Replace(CONSTANT_LINE, "");
                         constLineOriginal = line;
                     }
                     runtimeFileContent.AppendLine(line);
                 }
             }
 
-            // go over every line of the list template
-            listFileContent = new StringBuilder();
-            using (StreamReader file = new StreamReader(pathToListTemplate)) {
-                while ((line = file.ReadLine()) != null) {
-                    if (keysEntryTemplate == null && line.Contains(keysEntry)) {
-                        keysEntryTemplate = line.Replace(commentSignAndparamSign, "");
-                        keysEntryOriginal = line;
-                    }
-                    listFileContent.AppendLine(line);
-                }
-            }
+			// go over every line of the list template
+			listFileContent = new StringBuilder();
+			using (StreamReader file = new StreamReader(pathToListTemplate)) {
+				while ((line = file.ReadLine()) != null) {
+					if (keysEntryTemplate == null && line.Contains(KEYS_ENTRY)) {
+						keysEntryTemplate = line.Replace(COMMENT_SIGN_AND_PARAM_SIGN, "");
+						keysEntryOriginal = line;
+					}
+					listFileContent.AppendLine(line);
+				}
+			}
 
-            // go over every line of the lookup template
-            lookupFileContent = new StringBuilder();
-            using (StreamReader file = new StreamReader(pathToLookupTemplate)) {
-                while ((line = file.ReadLine()) != null) {
-                    if (keysLookupEntryTemplate == null && line.Contains(lookupEntryLine)) {
-                        keysLookupEntryTemplate = line.Replace(lookupEntryLine, "");
-                        keysLookupEntryOriginal = line;
-                    }
-                    lookupFileContent.AppendLine(line);
-                }
-            }
+			// go over every line of the lookup template
+			lookupFileContent = new StringBuilder();
+			using (StreamReader file = new StreamReader(pathToLookupTemplate)) {
+				while ((line = file.ReadLine()) != null) {
+					if (keysLookupEntryTemplate == null && line.Contains(LOOKUP_ENTRY_LINE)) {
+						keysLookupEntryTemplate = line.Replace(LOOKUP_ENTRY_LINE, "");
+						keysLookupEntryOriginal = line;
+					}
+					lookupFileContent.AppendLine(line);
+				}
+			}
 
             StringBuilder constLines = new StringBuilder();
             StringBuilder keyEntries = new StringBuilder();
             StringBuilder keyLookupEntries = new StringBuilder();
 
-            // go overy every translation key
+            // go overy every lookup key
             string value;
-            foreach (KeyValuePair<string, string> keyValuePair in keys.translations) {
+			string key;
+            foreach (KeyValuePair<int, string> keyValuePair in model.lookup) {
                 value = keyValuePair.Value;
                 value = value.Replace(' ', '_');
-                constLines.AppendLine(constLineTemplate.Replace(constKey, keyValuePair.Key).Replace(constValue, value));
-                keyEntries.AppendLine(keysEntryTemplate.Replace(nameof(keysEntry), value));
-                keyLookupEntries.AppendLine(keysLookupEntryTemplate.Replace(constKey, keyValuePair.Key).Replace(constValue, value));
+				key = ""+keyValuePair.Key;
+
+				constLines.AppendLine(constLineTemplate.Replace(CONST_KEY, key).Replace(CONST_VALUE, value));
+                keyEntries.AppendLine(keysEntryTemplate.Replace(KEYS_ENTRY_RAW, value));
+                keyLookupEntries.AppendLine(keysLookupEntryTemplate.Replace(CONST_KEY, key).Replace(CONST_VALUE, value));
             }
 
             // assign correct filename & replace constant template with the concrete data.
-            runtimeFileContent = runtimeFileContent.Replace(className, runtimeFilename);
-            runtimeFileContent = runtimeFileContent.Replace(constLineOriginal, constLines.ToString());
+            runtimeFileContent = runtimeFileContent.Replace(CLASS_NAME_KEYS, classNameKeys);
+			runtimeFileContent = runtimeFileContent.Replace(NAMESPACE_RUNTIME, namespaceRuntime);
+			runtimeFileContent = runtimeFileContent.Replace(NAMESPACE, @namespace);
+			runtimeFileContent = runtimeFileContent.Replace(constLineOriginal, constLines.ToString());
 
-            // assign correct filename & replace list template with the concrete data.
-            listFileContent = listFileContent.Replace(className, listFilename);
-            listFileContent = listFileContent.Replace(keysEntryOriginal, keyEntries.ToString());
-            
-            // assign correct filename & replace lookup template with the concrete data.
-            lookupFileContent = lookupFileContent.Replace(className, lookupFilename);
-            lookupFileContent = lookupFileContent.Replace(keysLookupEntryOriginal, keyLookupEntries.ToString());
+			// assign correct filename & replace list template with the concrete data.
+			listFileContent = listFileContent.Replace(CLASS_NAME_LIST, classNameList);
+			listFileContent = listFileContent.Replace(CLASS_NAME_KEYS, classNameKeys);
+			listFileContent = listFileContent.Replace(NAMESPACE_RUNTIME, namespaceRuntime);
+			listFileContent = listFileContent.Replace(NAMESPACE, @namespace);
+			listFileContent = listFileContent.Replace(keysEntryOriginal, keyEntries.ToString());
+
+			// assign correct filename & replace lookup template with the concrete data.
+			lookupFileContent = lookupFileContent.Replace(CLASS_NAME_LOOKUP, classNameLookup);
+			lookupFileContent = lookupFileContent.Replace(CLASS_NAME_KEYS, classNameKeys);
+			lookupFileContent = lookupFileContent.Replace(NAMESPACE_RUNTIME, namespaceRuntime);
+			lookupFileContent = lookupFileContent.Replace(NAMESPACE, @namespace);
+			lookupFileContent = lookupFileContent.Replace(keysLookupEntryOriginal, keyLookupEntries.ToString());
         }
 
         /// <summary>
         /// Actually create/overwrite all required script files
         /// </summary>
         private static void CreateScriptFiles() {
-            // runtime file (only constants)
-            File.WriteAllText(Path.Combine(dataPath, outputPathCached, runtimeFilename + ".cs"), runtimeFileContent.ToString());
-            // editor only files (list & lookup)
-            File.WriteAllText(Path.Combine(dataPath, outputEditorPathCached, listFilename + ".cs"), listFileContent.ToString());
-            File.WriteAllText(Path.Combine(dataPath, outputEditorPathCached, lookupFilename + ".cs"), lookupFileContent.ToString());
+
+			// runtime file (only constants)
+			CreateDirectoriesAndScriptFile(ref outputPathCached, ref classNameKeys, runtimeFileContent.ToString());
+
+			// editor only files (list & lookup)
+			if (createEditorScripts) {
+				CreateDirectoriesAndScriptFile(ref outputEditorPathCached, ref classNameList, listFileContent.ToString());
+				CreateDirectoriesAndScriptFile(ref outputEditorPathCached, ref classNameLookup, lookupFileContent.ToString());
+			}
         }
+
+		private static void CreateDirectoriesAndScriptFile(ref string outputPath, ref string scriptName, string fileContent) {
+			string finalPath = Path.Combine(dataPath, outputPath, scriptName + CSHARP_FILE_ENDING);
+			Directory.CreateDirectory(Path.GetDirectoryName(finalPath));
+			File.WriteAllText(finalPath, fileContent);
+		}
     }
 }
 

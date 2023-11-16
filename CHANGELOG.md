@@ -22,3 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.4] - 2023-03-22
 ### Fixed
 - Deactivating automatic file watcher as it sometimes causes/ triggers wrongly
+
+## [0.0.5] - 2023-11-16
+### Fixed
+- Renamed project, added new functionality to create constants for audio files
