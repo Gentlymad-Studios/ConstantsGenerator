@@ -15,6 +15,6 @@
 		"email": "team@gentlymadstudios.com"
 	},
 	"dependencies": {
-		"com.unity.nuget.newtonsoft-json": "3.0.2",
+		"com.unity.nuget.newtonsoft-json": "3.0.2"
 	}
 }
