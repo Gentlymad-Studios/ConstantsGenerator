@@ -129,7 +129,6 @@ namespace ConstantsGenerator {
 			outputEditorPathCached = generatorItem.outputEditorPath;
 			@namespace = generatorItem.@namespace;
 			namespaceRuntime = generatorItem.namespaceRuntime;
-			Debug.Log(namespaceRuntime);
 			classNameKeys = generatorItem.classNameKeys;
 			classNameList = generatorItem.classNameList;
 			classNameLookup = generatorItem.classNameLookup;
