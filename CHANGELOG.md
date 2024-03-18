@@ -26,3 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.5] - 2023-11-16
 ### Fixed
 - Renamed project, added new functionality to create constants for audio files
+
+## [0.0.6] - 2024-03-18
+### Added
+- Added ability to create constants with different types
+- added ability to include per line comments

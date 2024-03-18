@@ -1,6 +1,5 @@
 ﻿using UnityEditor;
 using UnityEngine;
-using Newtonsoft.Json;
 using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -23,7 +22,9 @@ namespace ConstantsGenerator {
         private const string LOOKUP_ENTRY_LINE = COMMENT_SIGN_AND_PARAM_SIGN + "1";
         private const string CONST_KEY = PARAM_SIGN + "constKey";
         private const string CONST_VALUE = PARAM_SIGN + "constValue";
-		private const string KEYS_ENTRY_RAW = "keysEntry";
+        private const string CONST_TYPE = PARAM_SIGN + "constType";
+        private const string CONST_COMMENT = PARAM_SIGN + "constComment";
+        private const string KEYS_ENTRY_RAW = "keysEntry";
 		private const string KEYS_ENTRY = PARAM_SIGN + KEYS_ENTRY_RAW;
 		private const string CLASS_NAME_LIST = COMMENT_SIGN_AND_PARAM_SIGN + nameof(classNameList);
 		private const string CLASS_NAME_LOOKUP = COMMENT_SIGN_AND_PARAM_SIGN + nameof(classNameLookup);
@@ -41,7 +42,7 @@ namespace ConstantsGenerator {
 
         internal static string outputPathCached = null;
         internal static string outputEditorPathCached = null;
-        internal static LookupModel model = null;
+        internal static ILookupModel model = null;
 
         internal static string pathToRuntimeTemplate = null;
         internal static string pathToListTemplate = null;
@@ -65,7 +66,7 @@ namespace ConstantsGenerator {
 			}
 		}
 
-		public static void SetModel(LookupModel model) {
+		public static void SetModel<T>(LookupModel<T> model) {
 			Generator.model = model;
 		}
 
@@ -114,13 +115,6 @@ namespace ConstantsGenerator {
             isGenerating = false;
         }
 
-		public static void ConvertJSON(GeneratorItem generatorItem) {
-			// load the .json file
-			string json = AssetDatabase.LoadAssetAtPath<TextAsset>(generatorItem.searchPath).text;
-			// deserialize it (JSON.NET does not work in an asynchronous context)
-			model = JsonConvert.DeserializeObject<LookupModel>(json);
-		}
-
 		private static void UpdateSpecificSources(GeneratorItem generatorItem) {
 			conversionActions[generatorItem.logicID](generatorItem);
 
@@ -162,27 +156,35 @@ namespace ConstantsGenerator {
         private static void CreateFileContents() {
             string line = null;
             string constLineTemplate = null;
+            string commentTemplate = null;
             string keysEntryTemplate = null;
             string keysLookupEntryTemplate = null;
 
             string constLineOriginal = null;
             string keysEntryOriginal = null;
             string keysLookupEntryOriginal = null;
+            string commentTemplateOriginal = null;
 
             // go over every line of the runtime template
             runtimeFileContent = new StringBuilder();
             using (StreamReader file = new StreamReader(pathToRuntimeTemplate)) {
                 while ((line = file.ReadLine()) != null) {
-                    if (constLineTemplate == null && line.Contains(CONSTANT_LINE)) {
-                        constLineTemplate = line.Replace(CONSTANT_LINE, "");
-                        constLineOriginal = line;
+                    if (constLineTemplate == null) {
+                        if (line.Contains(CONSTANT_LINE)) {
+                            constLineTemplate = line.Replace(CONSTANT_LINE, "");
+                            constLineOriginal = line;
+                        } else if (line.Contains(LOOKUP_ENTRY_LINE)) {
+                            commentTemplate = line.Replace(LOOKUP_ENTRY_LINE, "");
+							commentTemplateOriginal = line;
+                        }
                     }
                     runtimeFileContent.AppendLine(line);
                 }
             }
+            constLineTemplate = constLineTemplate.Replace(CONST_TYPE, model.GetTypeName());
 
-			// go over every line of the list template
-			listFileContent = new StringBuilder();
+            // go over every line of the list template
+            listFileContent = new StringBuilder();
 			using (StreamReader file = new StreamReader(pathToListTemplate)) {
 				while ((line = file.ReadLine()) != null) {
 					if (keysEntryTemplate == null && line.Contains(KEYS_ENTRY)) {
@@ -210,26 +212,26 @@ namespace ConstantsGenerator {
             StringBuilder keyLookupEntries = new StringBuilder();
 
             // go overy every lookup key
-            string value;
-			string key;
-            foreach (KeyValuePair<int, string> keyValuePair in model.lookup) {
-                value = keyValuePair.Value;
-                value = value.Replace(' ', '_');
-				key = ""+keyValuePair.Key;
-
-				constLines.AppendLine(constLineTemplate.Replace(CONST_KEY, key).Replace(CONST_VALUE, value));
-                keyEntries.AppendLine(keysEntryTemplate.Replace(KEYS_ENTRY_RAW, value));
+			void TransformValue(string key, string value, string comment) {
+				if(comment != null) {
+					constLines.AppendLine(commentTemplate.Replace(CONST_COMMENT, comment));
+                }
+                constLines.AppendLine(constLineTemplate.Replace(CONST_KEY, key).Replace(CONST_VALUE, value));
+				keyEntries.AppendLine(keysEntryTemplate.Replace(KEYS_ENTRY_RAW, value));
                 keyLookupEntries.AppendLine(keysLookupEntryTemplate.Replace(CONST_KEY, key).Replace(CONST_VALUE, value));
             }
+			model.SetTransformAction(TransformValue);
+			model.TransformEach();
 
             // assign correct filename & replace constant template with the concrete data.
             runtimeFileContent = runtimeFileContent.Replace(CLASS_NAME_KEYS, classNameKeys);
 			runtimeFileContent = runtimeFileContent.Replace(NAMESPACE_RUNTIME, namespaceRuntime);
 			runtimeFileContent = runtimeFileContent.Replace(NAMESPACE, @namespace);
 			runtimeFileContent = runtimeFileContent.Replace(constLineOriginal, constLines.ToString());
+            runtimeFileContent = runtimeFileContent.Replace(commentTemplateOriginal, "");
 
-			// assign correct filename & replace list template with the concrete data.
-			listFileContent = listFileContent.Replace(CLASS_NAME_LIST, classNameList);
+            // assign correct filename & replace list template with the concrete data.
+            listFileContent = listFileContent.Replace(CLASS_NAME_LIST, classNameList);
 			listFileContent = listFileContent.Replace(CLASS_NAME_KEYS, classNameKeys);
 			listFileContent = listFileContent.Replace(NAMESPACE_RUNTIME, namespaceRuntime);
 			listFileContent = listFileContent.Replace(NAMESPACE, @namespace);

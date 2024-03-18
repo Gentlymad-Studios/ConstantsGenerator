@@ -21,17 +21,17 @@ namespace ConstantsGenerator {
 		/// guid of the runtime c# template to use
 		/// </summary>
 		[Tooltip("guid of the runtime c# template to use")]
-		public string guidOfRuntimeTemplate = "f48d54b919a0e3646b996be8a91f53fc";
+		public string guidOfRuntimeTemplate = "dac244c11bf72bd43af6d58170f76dae";
 		/// <summary>
 		/// guid of the editor only list template to use
 		/// </summary>
 		[Tooltip("guid of the editor only list template to use")]
-		public string guidOfListTemplate = "fcd75c38619fd0145bf7a6e1b20174eb";
+		public string guidOfListTemplate = "8a1de681a322f8c4d859436039274167";
 		/// <summary>
 		/// guid of the lookup table to use
 		/// </summary>
 		[Tooltip("guid of the lookup table to use")]
-		public string guidOfLookupTemplate = "9d5f11f97d1a65e458740e647f2e3ee5";
+		public string guidOfLookupTemplate = "296667c959620de48936f0102855f028";
 
 		/// <summary>
 		/// This adapter allows to specify custom logic for our conversion actions

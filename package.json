@@ -2,7 +2,7 @@
 	"name": "com.gentlymadstudios.constantsgenerator",
 	"displayName": "Constants Generator",
 	"description": "Code generation for dynamic game content to get type safety when we need to reference specific data &amp; in scripts. This tool can create C# files based on custom logic.",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"unity": "2022.2",
 	"license": "MIT",
 	"documentationUrl": "https://github.com/Gentlymad-Studios/ConstantsGenerator/blob/master/README.md",
